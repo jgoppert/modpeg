@@ -31,7 +31,8 @@ modelica_parser = Grammar(r"""
 
     short_class_specifier = (ident equals base_prefix name
         array_subscripts? class_modification? comment) /
-        (ident  equals enumeration lparen (enum_list/colon) rparen comment)
+        (ident  equals enumeration lparen (enum_list/colon) rparen
+        comment)
 
     extends_class_specifier = ident class_modification?
         string_comment composition end ident
@@ -122,7 +123,8 @@ modelica_parser = Grammar(r"""
     element_replaceable = replaceable (short_class_definition /
         component_clause1) constraining_clause?
 
-    component_clause1 = type_prefix type_specifier component_declaration1
+    component_clause1 = type_prefix type_specifier
+        component_declaration1
 
     component_declaration1 = declaration comment
 
@@ -144,11 +146,27 @@ modelica_parser = Grammar(r"""
         / connect_clause / when_equation
         / (name function_call_args)) comment
 
-    statement = ''
+    statement = (component_reference ( assign expression /
+        function_call_args ) / ( lparen output_expression_list
+        rstatementparen assign component_reference
+        function_call_args) / break / return / if_statement
+        / for_statement / while_statement / when_statement )
 
-    if_equation = ''
+    if_equation = if expression then
+            (equation semicolon)*
+        (elseif expression then
+            (equation semicolon)* )*
+        (else
+            (equation semicolon)* )?
+        end if
 
-    if_statement = ''
+    if_statement = if expression then
+            (statement semicolon)*
+        (elseif expression then
+            (statement semicolon)* )*
+        (else
+            (statement semicolon)* )?
+        end if
 
     for_equation = ''
 
