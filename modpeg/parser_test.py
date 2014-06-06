@@ -23,10 +23,13 @@ end test;
 """
 
 hello_world_src = """
-model HelloWorld "A differrential equation"
+model HelloWorld "A differential equation"
 equation
 end HelloWorld;
 """
+# model HelloWorld "A differrential equation"
+# equation
+# end HelloWorld;
 # Real x(start=1);
 # equation
 # der(x) = -x;

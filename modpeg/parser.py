@@ -8,7 +8,8 @@ modelica_parser = Grammar(r"""
     # STORED DEFINITION
     #===============================================================
     stored_definition = _ (within name? semicolon)?
-        (final? class_definition semicolon)*
+        (final? class_definition semicolon)+
+    # changed to plus to force once definition
 
     #===============================================================
     # CLASS DEFINITION
@@ -34,11 +35,11 @@ modelica_parser = Grammar(r"""
         (ident  equals enumeration lparen (enum_list/colon) rparen
         comment)
 
-    extends_class_specifier = ident class_modification?
-        string_comment composition end ident
+    der_class_specifier = ident equals der lparen name
+        (comma ident)+ rparen comment
 
-    der_class_specifier = ident equals der lparen name comma
-        ident (comma ident )* rparen comment
+    extends_class_specifier = extends ident class_modification?
+        string_comment composition end ident
 
     base_prefix = type_prefix
 
@@ -50,28 +51,25 @@ modelica_parser = Grammar(r"""
        element_list)/ equation_section/ algorithm_section)*
        (external language_specification?
        external_function_call? annotation? semicolon)?
+       (annotation semicolon)?
 
     language_specification = string
 
-    external_function_call = (component_reference equals) ident
+    external_function_call = (component_reference equals)? ident
         lparen expression_list? rparen
 
     element_list = (element semicolon)*
 
-    element = ''
-        # import_clause /
-        # extends_clause /
-        # (redeclare? final? inner? outer? (
-        #     (class_definition/ component_clause)/
-        #     ( replaceable (class_definition/ component_clause)
-        #     (constraining_clause comment)?))
+    element = import_clause /  extends_clause
+        / (redeclare? final? inner? outer? (
+        (class_definition / component_clause)
+        /(replaceable (class_definition / component_clause)
+        constraining_clause comment?)))
 
-    import_clause = ''
-    # import ( (ident equals name) |
-    #     (name ['.' ('*'
+    import_clause = import ( (ident equals name) /
+        (name (period (times / (lbrace import_list rbrace)) )?)) comment
 
-    # import_list:
-    #     ident (comma import_list)?
+    import_list = ident (comma import_list)?
 
     #===============================================================
     # EXTENDS
@@ -91,8 +89,8 @@ modelica_parser = Grammar(r"""
 
     type_specifier = name
 
-    component_list = component_declaration lbrace comma
-        component_declaration rbrace
+    component_list = component_declaration (comma
+        component_declaration)*
 
     component_declaration = declaration condition_attribute? comment
 
@@ -108,7 +106,7 @@ modelica_parser = Grammar(r"""
 
     class_modification = lparen argument_list? rparen
 
-    argument_list = argument lbrace comma argument rbrace
+    argument_list = argument (comma argument)*
 
     argument = element_modification_or_replaceable /
         element_redeclaration
@@ -139,17 +137,17 @@ modelica_parser = Grammar(r"""
     #===============================================================
     equation_section = initial? 'equation'_ (equation semicolon)*
 
-    algorithm_section = initial? 'algorithm' (statement semicolon)*
+    algorithm_section = initial? 'algorithm'_ (statement semicolon)*
 
     equation = ((simple_expression equals expression)
         / if_equation / for_equation
         / connect_clause / when_equation
         / (name function_call_args)) comment
 
-    statement = ((component_reference ( (assign expression) /
-        function_call_args )) / ( lparen output_expression_list
-        rparen assign component_reference
-        function_call_args) / break / return / if_statement
+    statement = ((component_reference ( (assign expression)
+        / function_call_args )) / ( lparen output_expression_list
+        rparen assign component_reference function_call_args)
+        / break / return / if_statement
         / for_statement / while_statement / when_statement )
 
     if_equation = if expression then
@@ -222,17 +220,18 @@ modelica_parser = Grammar(r"""
 
     relation = arithmetic_expression (rel_op arithmetic_expression)?
 
-    rel_op = '<'/ '<=' / '>' / '>=' / '==' / '<>'
+    rel_op = less_than / less_than_or_equal / greater_than
+        / greater_than_or_equal / equality / inequality
 
     arithmetic_expression = add_op? term (add_op term)*
 
-    add_op = '+' / '-' / '.+' / '.-'
+    add_op = plus / minus / dot_plus / dot_minus
 
     term = factor (mul_op factor)*
 
-    mul_op = '*' / '/' / '.*' / './'
+    mul_op = times / divide / dot_times / dot_divide
 
-    factor = primary ( ('^' / '.^') primary)?
+    factor = primary ( (exp / dot_exp) primary)?
 
     primary = unsigned_number / string / false / true
         / ((name / der / initial) function_call_args)
@@ -243,33 +242,36 @@ modelica_parser = Grammar(r"""
         / (lbrace function_arguments rbrace)
         / end
 
-    name = '.'? _ ident ('.' _ ident)*
+    name = period ? ident (period ident)*
 
-    component_reference = ''
+    component_reference = (period ident array_subscripts?)+
 
-    function_call_args = ''
+    function_call_args = lparen function_arguments? rparen
 
-    function_arguments = ''
+    function_arguments = function argument
+        ((comma function_arguments) / (for for_indices) /
+        named_arguments)
 
-    named_arguments = ''
+    named_arguments = named_argument (comma named_arguments)?
 
-    named_argument = ''
+    named_argument = ident equals function_argument
 
-    function_argument = ''
+    function_argument = function name
+        ((lparen named_arguments? rparen) / expression)
 
-    output_expression_list = ''
+    output_expression_list = expression? (comma expression?)*
 
-    expression_list = ''
+    expression_list = expression (comma expression)*
 
-    array_subscripts = ''
+    array_subscripts = lbracket subscript (comma subscript)* rbracket
 
-    subscript = ''
+    subscript = colon / expression
 
-    comment = string_comment annotation?_
+    comment = string_comment annotation?
 
-    string_comment=~r'.*'_
+    string_comment= string ( plus string)*
 
-    annotation=~r'".*"'_
+    annotation = annotation class_modification
 
     #===============================================================
     # KEYWORDS
@@ -340,8 +342,6 @@ modelica_parser = Grammar(r"""
     # BASIC
     #===============================================================
     _ = ~'\s*'
-    ident = ~'[A-Za-z]+'_
-    string = ~'[A-Za-z]+'_
     equals = '='_
     assign = ':='_
     semicolon = ';'_
@@ -356,15 +356,30 @@ modelica_parser = Grammar(r"""
     lbrace = '{'_
     rbrace = '}'_
     period = '.'_
-    asterik = '*'_
+    plus = '+'_
+    dot_plus = '.+'_
+    minus = '-'_
+    dot_minus = '.-'_
+    times = '*'_
+    dot_times = '.*'_
+    divide = '/'_
+    dot_divide = './'_
+    exp = '^'_
+    dot_exp = '.^'_
+    less_than = '<'_
+    less_than_or_equal = '<='_
+    greater_than = '>'_
+    greater_than_or_equal = '>='_
+    equality = '=='_
+    inequality = '<>'_
 
     ident = (nondigit ( digit / nondigit )*) / q_ident
     q_ident = single_quote (q_char / s_escape)+ single_quote
     nondigit = ~'[_a-zA-Z]'_
-    string = double_quote  (s_char/s_escape)* double_quote
-    s_char = '~[\S+]u'_
-    q_char = (nondigit/digit / (~'[#$%&()*+,-./:;<>=?@[]^\{}|~ ')) _
-    s_escape = ~'[\'"\?\\\a\b\f\n\r\t\v]'_
+    string = double_quote (s_char/s_escape)* double_quote
+    s_char = ~r'[^"\\]*'u
+    q_char = (nondigit/digit / (~r'[#$%&()*+,-./:;<>=?@[]^\{}|~ '))_
+    s_escape = ~r'[\'"\?\\\a\b\f\n\r\t\v]'_
     digit = ~'[0-9]'_
     unsigned_integer = digit+
     unsigned_number = unsigned_integer ( "." unsigned_integer?)?
