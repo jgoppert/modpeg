@@ -146,9 +146,9 @@ modelica_parser = Grammar(r"""
         / connect_clause / when_equation
         / (name function_call_args)) comment
 
-    statement = (component_reference ( assign expression /
-        function_call_args ) / ( lparen output_expression_list
-        rstatementparen assign component_reference
+    statement = ((component_reference ( (assign expression) /
+        function_call_args )) / ( lparen output_expression_list
+        rparen assign component_reference
         function_call_args) / break / return / if_statement
         / for_statement / while_statement / when_statement )
 
@@ -163,55 +163,85 @@ modelica_parser = Grammar(r"""
     if_statement = if expression then
             (statement semicolon)*
         (elseif expression then
-            (statement semicolon)* )*
+            (statement semicolon)*
+        )*
         (else
-            (statement semicolon)* )?
+            (statement semicolon)*
+        )?
         end if
 
-    for_equation = ''
+    for_equation = for for_indices loop
+        (equation semicolon)*
+        end for
 
-    for_statement = ''
+    for_statement = for for_indices loop
+        (statement semicolon)*
+        end for
 
-    for_indices = ''
+    for_indices = for_index (comma for_index)*
 
-    for_index = ''
+    for_index = ident (in expression)?
 
-    when_statement = ''
+    while_statement = while expression loop
+        (statement semicolon)*
+        end while
 
-    when_equation = ''
+    when_equation = when expression then
+            (equation semicolon)*
+        (elsewhen expression then
+            (equation semicolon)*
+        )*
+        end when
 
-    when_statement = ''
+    when_statement = when expression then
+            (statement semicolon)*
+        (elsewhen expression then
+            (statement semicolon)*
+        )*
+        end when
 
-    connect_clause = ''
+    connect_clause = connect lparen component_reference comma
+        component_reference rparen
 
     #===============================================================
     # EXPRESSION
     #===============================================================
-    expression = ''
+    expression = simple_expression /
+        (if expression then expression
+        (elseif expression then expression)* else expression)
 
-    simple_expression = ''
+    simple_expression = logical_expression
+        (semicolon logical_expression
+        (semicolon logical_expression)?)?
 
-    logical_expression = ''
+    logical_expression = logical_term (or logical_term)*
 
-    logical_term = ''
+    logical_term = logical_factor (and logical_factor)*
 
-    logical_factor = ''
+    logical_factor = not? relation
 
-    relation = ''
+    relation = arithmetic_expression (rel_op arithmetic_expression)?
 
-    rel_op = ''
+    rel_op = '<'/ '<=' / '>' / '>=' / '==' / '<>'
 
-    arithmetic_expression = ''
+    arithmetic_expression = add_op? term (add_op term)*
 
-    add_op = ''
+    add_op = '+' / '-' / '.+' / '.-'
 
-    term = ''
+    term = factor (mul_op factor)*
 
-    mul_op = ''
+    mul_op = '*' / '/' / '.*' / './'
 
-    factor = ''
+    factor = primary ( ('^' / '.^') primary)?
 
-    primary = ''
+    primary = unsigned_number / string / false / true
+        / ((name / der / initial) function_call_args)
+        / component_reference
+        / (lparen output_expression_list rparen)
+        / (lbracket expression_list
+            ( semicolon expression_list )* rbracket)
+        / (lbrace function_arguments rbrace)
+        / end
 
     name = '.'? _ ident ('.' _ ident)*
 
@@ -317,6 +347,8 @@ modelica_parser = Grammar(r"""
     semicolon = ';'_
     lparen = '('_
     rparen = ')'_
+    lbracket = '{'_
+    rbracket = '}'_
     colon = ':'_
     comma = ','_
     double_quote = '"'_
