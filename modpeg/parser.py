@@ -59,7 +59,7 @@ modelica_parser = Grammar(r"""
 
     # notice we do a lookahead assertion here that is PEG but not EBNF
     # to ensure that end is not consumed as an ident
-    element_list = (!(end/'equation'/'algorithm')
+    element_list = (!(end/equation/algorithm)
         ((element semicolon)/(annotation semicolon)))*
 
     element = import_clause /  extends_clause
@@ -137,11 +137,13 @@ modelica_parser = Grammar(r"""
     #===============================================================
     # EQUATION
     #===============================================================
-    equation_section = initial? 'equation'_ (equation semicolon)*
+    equation_section = initial? equation (equation_expr semicolon)*
 
-    algorithm_section = initial? 'algorithm'_ (statement semicolon)*
+    algorithm_section = initial? algorithm (statement semicolon)*
 
-    equation = ((simple_expression equals expression)
+    # note there is also an equation keywords so we call the
+    # expression equation_expr
+    equation_expr = ((simple_expression equals expression)
         / if_equation / for_equation
         / connect_clause / when_equation
         / (name function_call_args)) comment
@@ -153,11 +155,11 @@ modelica_parser = Grammar(r"""
         / for_statement / while_statement / when_statement )
 
     if_equation = if expression then
-            (equation semicolon)*
+            (equation_expr semicolon)*
         (elseif expression then
-            (equation semicolon)* )*
+            (equation_expr semicolon)* )*
         (else
-            (equation semicolon)* )?
+            (equation_expr semicolon)* )?
         end if
 
     if_statement = if expression then
@@ -171,7 +173,7 @@ modelica_parser = Grammar(r"""
         end if
 
     for_equation = for for_indices loop
-        (equation semicolon)*
+        (equation_expr semicolon)*
         end for
 
     for_statement = for for_indices loop
@@ -276,75 +278,6 @@ modelica_parser = Grammar(r"""
     annotation = annotation class_modification
 
     #===============================================================
-    # KEYWORDS
-    #===============================================================
-    # algorithm is also the name of an expression, so we just
-    # type it when needed
-    # algorithm = 'algorithm'_
-    and = 'and'_
-    annotation = 'annotation'_
-    assert = 'assert'_
-    block = 'block'_
-    break = 'break'_
-    class = 'class'_
-    connect = 'connect'_
-    connector = 'connector'_
-    constant = 'constant'_
-    constrainedby = 'constrainedby'_
-    der = 'der'_
-    discrete = 'discrete'_
-    each = 'each'_
-    else = 'else'_
-    elseif = 'elseif'_
-    elsewhen = 'elsewhen'_
-    encapsulated = 'encapsulated'_
-    end = 'end'_
-    enumeration = 'enumeration'_
-    # equation is also the name of an expression, so we just
-    # type it when needed
-    # equation = 'equation'_
-    expandable = 'expandable'_
-    extends = 'extends'_
-    external = 'external'_
-    false = 'false'_
-    final = 'final'_
-    flow = 'flow'_
-    for= 'for'_
-    function = 'function'_
-    if = 'if'_
-    import = 'import'_
-    impure = 'impure'_
-    in = 'in'_
-    initial = 'initial'_
-    inner = 'inner'_
-    input = 'input'_
-    initial = 'initial'_
-    loop = 'loop'_
-    model = 'model'_
-    not = 'not'_
-    operator = 'operator'_
-    or = 'or'_
-    outer = 'outer'_
-    output = 'output'_
-    package = 'package'_
-    parameter = 'parameter'_
-    partial = 'partial'_
-    protected = 'protected'_
-    public = 'public'_
-    pure = 'pure'_
-    record = 'record'_
-    redeclare = 'redeclare'_
-    replaceable = 'replaceable'_
-    return = 'return'_
-    stream = 'stream'_
-    then = 'then'_
-    true = 'true'_
-    type = 'type'_
-    when = 'when'_
-    while = 'while'_
-    within = 'within'_
-
-    #===============================================================
     # BASIC
     #===============================================================
     _ = ~'\s*'
@@ -389,4 +322,69 @@ modelica_parser = Grammar(r"""
     unsigned_integer = digit+
     unsigned_number = unsigned_integer ( '.' unsigned_integer?)?
         (('e'/'E') ('+'/'-')? unsigned_integer)?
+
+    #===============================================================
+    # KEYWORDS
+    #===============================================================
+    algorithm = 'algorithm'_
+    and = 'and'_
+    annotation = 'annotation'_
+    assert = 'assert'_
+    block = 'block'_
+    break = 'break'_
+    class = 'class'_
+    connect = 'connect'_
+    connector = 'connector'_
+    constant = 'constant'_
+    constrainedby = 'constrainedby'_
+    der = 'der'_
+    discrete = 'discrete'_
+    each = 'each'_
+    else = 'else'_
+    elseif = 'elseif'_
+    elsewhen = 'elsewhen'_
+    encapsulated = 'encapsulated'_
+    end = 'end'_
+    enumeration = 'enumeration'_
+    equation = 'equation'_
+    expandable = 'expandable'_
+    extends = 'extends'_
+    external = 'external'_
+    false = 'false'_
+    final = 'final'_
+    flow = 'flow'_
+    for= 'for'_
+    function = 'function'_
+    if = 'if'_
+    import = 'import'_
+    impure = 'impure'_
+    in = 'in'_
+    initial = 'initial'_
+    inner = 'inner'_
+    input = 'input'_
+    initial = 'initial'_
+    loop = 'loop'_
+    model = 'model'_
+    not = 'not'_
+    operator = 'operator'_
+    or = 'or'_
+    outer = 'outer'_
+    output = 'output'_
+    package = 'package'_
+    parameter = 'parameter'_
+    partial = 'partial'_
+    protected = 'protected'_
+    public = 'public'_
+    pure = 'pure'_
+    record = 'record'_
+    redeclare = 'redeclare'_
+    replaceable = 'replaceable'_
+    return = 'return'_
+    stream = 'stream'_
+    then = 'then'_
+    true = 'true'_
+    type = 'type'_
+    when = 'when'_
+    while = 'while'_
+    within = 'within'_
     """)
