@@ -57,9 +57,10 @@ modelica_parser = Grammar(r"""
     external_function_call = (component_reference equals)? ident
         lparen expression_list? rparen
 
-    # notice we do a lookahead assertion hear that is PEG but not EBNF
+    # notice we do a lookahead assertion here that is PEG but not EBNF
     # to ensure that end is not consumed as an ident
-    element_list = (!end ((element semicolon)/(annotation semicolon)))*
+    element_list = (!(end/'equation'/'algorithm')
+        ((element semicolon)/(annotation semicolon)))*
 
     element = import_clause /  extends_clause
          / (redeclare? final? inner? outer? (
@@ -277,7 +278,9 @@ modelica_parser = Grammar(r"""
     #===============================================================
     # KEYWORDS
     #===============================================================
-    algorithm = 'algorithm'_
+    # algorithm is also the name of an expression, so we just
+    # type it when needed
+    # algorithm = 'algorithm'_
     and = 'and'_
     annotation = 'annotation'_
     assert = 'assert'_
@@ -297,7 +300,9 @@ modelica_parser = Grammar(r"""
     encapsulated = 'encapsulated'_
     end = 'end'_
     enumeration = 'enumeration'_
-    equation = 'equation'_
+    # equation is also the name of an expression, so we just
+    # type it when needed
+    # equation = 'equation'_
     expandable = 'expandable'_
     extends = 'extends'_
     external = 'external'_

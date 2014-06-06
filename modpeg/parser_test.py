@@ -8,7 +8,6 @@ class Test(unittest.TestCase):
     def setUp(self):
         pass
 
-    @unittest.skip('not working yet')
     def test_empty_class(self):
         ast = modelica_parser.parse(empty_class_src)
         print ModelicaPrinter().visit(ast)
@@ -24,7 +23,7 @@ end test;
 """
 
 hello_world_src = """
-model helloworld ""
+model helloworld "A differential equation"
 real a;
 real b;
 equation
