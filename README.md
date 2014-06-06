@@ -12,25 +12,25 @@ https://github.com/erikrose/parsimonious
 
 If you have ever used fortran magic I would imagine that modelica magic would work the same way. You would do something like
 
-%modelica
-model ball
-  Real a;
-equation
-  der(a) = a;
-end model ball
+    %modelica
+    model ball
+      Real a;
+    equation
+      der(a) = a;
+    end model ball
 
 in one cell, then you get the python object out to play with
 
-results = ball.simulate(tf=10)
-plot(results.a)
+    results = ball.simulate(tf=10)
+    plot(results.a)
 
 #### real-time simulation
 
-sim = ode(ball.dynamics)
-while sim.successfull
-    sim.integrate(sim.t + dt)
-    do real-time stuff
-    // wait on wall clock
+    sim = ode(ball.dynamics)
+    while sim.successfull
+        sim.integrate(sim.t + dt)
+        do real-time stuff
+        // wait on wall clock
 
 
 #### analytical jacobians
@@ -45,3 +45,4 @@ sim = ode(ball.inverse_dynamics)
 while sim.successfull
     sim.integrate(sim.t + dt)
 
+vim:ts=4:sw=4:expandtab
