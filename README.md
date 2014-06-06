@@ -43,14 +43,26 @@ in one cell, then you get the python object out to play with
 
 #### analytical jacobians
 
-for sympy
+We want to create analytical jacobians that play well with sympy.
 
-ball_trimmed = ball.trim(a=1).
-A = sympy.jacobian([ball_trimmed.der(a)],[ball_trimmed.a])
+    ball_trimmed = ball.trim(a=1).
+    states = [ball.a]
+    inputs = [ball.u]
+    f = ball_trimmed.dynamics([states]) # sympy matrix
+    A = f.jacobian(states)
+    B = f.jacobian(input)
+
+Now we can use python control for linear analysis.
+
+    ss = control.ss(A.subs(const),B.subs(const),
+        C=np.eye(2),D=np.eye(2))
+    control.bode(ss)
 
 #### inverse dynamics
-sim = ode(ball.inverse_dynamics)
-while sim.successfull
-    sim.integrate(sim.t + dt)
 
+The inverse dynamics should be able to be simulated with numpy and printed with the same interface as the standard dynamics.
+
+    sim = ode(ball.inverse_dynamics)
+    while sim.successfull
+        sim.integrate(sim.t + dt)
 vim:ts=4:sw=4:expandtab
