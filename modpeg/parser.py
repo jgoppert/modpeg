@@ -167,7 +167,9 @@ modelica_parser = Grammar(r"""
 
     connect_clause = ''
 
+    #===============================================================
     # EXPRESSION
+    #===============================================================
     expression = ''
 
     simple_expression = ''

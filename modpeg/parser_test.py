@@ -24,6 +24,7 @@ end test;
 
 hello_world_src = """
 model HelloWorld "A differrential equation"
+equation
 end HelloWorld;
 """
 # Real x(start=1);
