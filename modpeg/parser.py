@@ -8,8 +8,7 @@ modelica_parser = Grammar(r"""
     # STORED DEFINITION
     #===============================================================
     stored_definition = _ (within name? semicolon)?
-        (final? class_definition semicolon)+
-    # changed to plus to force once definition
+        (_ final? class_definition semicolon)
 
     #===============================================================
     # CLASS DEFINITION
@@ -58,13 +57,15 @@ modelica_parser = Grammar(r"""
     external_function_call = (component_reference equals)? ident
         lparen expression_list? rparen
 
-    element_list = (element semicolon)*
+    # notice we do a lookahead assertion hear that is PEG but not EBNF
+    # to ensure that end is not consumed as an ident
+    element_list = (!end ((element semicolon)/(annotation semicolon)))*
 
     element = import_clause /  extends_clause
-        / (redeclare? final? inner? outer? (
-        (class_definition / component_clause)
-        /(replaceable (class_definition / component_clause)
-        constraining_clause comment?)))
+         / (redeclare? final? inner? outer? (
+         (class_definition / component_clause)
+         /(replaceable (class_definition / component_clause)
+         constraining_clause comment)))
 
     import_clause = import ( (ident equals name) /
         (name (period (times / (lbrace import_list rbrace)) )?)) comment
@@ -82,7 +83,7 @@ modelica_parser = Grammar(r"""
     # COMPONENT CLAUSE
     #===============================================================
     component_clause = type_prefix type_specifier array_subscripts?
-        component_list
+       component_list
 
     type_prefix = (flow/ stream)? (discrete/parameter/constant)?
     (input/output)?
@@ -90,9 +91,9 @@ modelica_parser = Grammar(r"""
     type_specifier = name
 
     component_list = component_declaration (comma
-        component_declaration)*
+      component_declaration)*
 
-    component_declaration = declaration condition_attribute? comment
+    component_declaration = declaration condition_attribute? comment?
 
     condition_attribute = if expression
 
@@ -269,7 +270,7 @@ modelica_parser = Grammar(r"""
 
     comment = string_comment annotation?
 
-    string_comment= string ( plus string)*
+    string_comment = string ( plus string)*
 
     annotation = annotation class_modification
 
@@ -372,16 +373,15 @@ modelica_parser = Grammar(r"""
     greater_than_or_equal = '>='_
     equality = '=='_
     inequality = '<>'_
-
-    ident = (nondigit ( digit / nondigit )*) / q_ident
+    ident = (nondigit ( digit / nondigit )*_) / q_ident
     q_ident = single_quote (q_char / s_escape)+ single_quote
-    nondigit = ~'[_a-zA-Z]'_
     string = double_quote (s_char/s_escape)* double_quote
+    nondigit = ~'[_a-zA-Z]'
     s_char = ~r'[^"\\]*'u
-    q_char = (nondigit/digit / (~r'[#$%&()*+,-./:;<>=?@[]^\{}|~ '))_
-    s_escape = ~r'[\'"\?\\\a\b\f\n\r\t\v]'_
-    digit = ~'[0-9]'_
+    q_char = (nondigit/digit/~r'[#$%&()*+,-./:;<>=?@[]^\{}|~ ')
+    s_escape = ~r'[\'"\?\\\a\b\f\n\r\t\v]'
+    digit = ~'[0-9]'
     unsigned_integer = digit+
-    unsigned_number = unsigned_integer ( "." unsigned_integer?)?
-        (("e"/"E") ("+"/"-")? unsigned_integer)?
+    unsigned_number = unsigned_integer ( '.' unsigned_integer?)?
+        (('e'/'E') ('+'/'-')? unsigned_integer)?
     """)
