@@ -1,5 +1,9 @@
 from parsimonious.grammar import Grammar
 
+# This grammar was based off the EBNF grammar for Modelica 3.2
+# provided here:
+# https://build.openmodelica.org/Documentation/ModelicaReference.ModelicaGrammar.html
+
 modelica_parser = Grammar(r"""
     #===============================================================
     # STORED DEFINITION
