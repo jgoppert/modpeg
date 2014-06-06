@@ -1,8 +1,7 @@
 from parsimonious.grammar import Grammar
 
-# This grammar was based off the EBNF grammar for Modelica 3.2
-# provided here:
-# https://build.openmodelica.org/Documentation/ModelicaReference.ModelicaGrammar.html
+# This grammar is based off of the Modelica 3.3 standard.
+# https://www.modelica.org/documents/ModelicaSpec33.pdf
 
 modelica_parser = Grammar(r"""
     #===============================================================
