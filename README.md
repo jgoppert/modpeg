@@ -6,7 +6,15 @@ https://github.com/erikrose/parsimonious
 
 ##Roadmap
 
+### DONE
+
+* basic parser that can handle helloworld example
+
 ### TODO
+
+#### backend representation
+
+We need to create a backend representation of the models that can generate the equations for simulation/ inverse simulation/ jacobians etc.
 
 #### modelica magic
 
