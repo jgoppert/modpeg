@@ -1,1 +1,3 @@
-This is a modelica compiler written using the parimonious PEG parser.
+This is a modelica compiler written using the parsimonious PEG parser.
+
+https://github.com/erikrose/parsimonious
