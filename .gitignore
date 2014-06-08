@@ -3,3 +3,4 @@
 dist/
 *.egg*
 *.swp
+*_parsetab.py*
