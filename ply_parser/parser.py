@@ -155,6 +155,10 @@ class ModelicaParser(Parser):
 
     start = 'stored_definition'
 
+    # ----------------------------------------------------------
+    # Parsing Helper Functions
+    # ----------------------------------------------------------
+
     @staticmethod
     def list_extend(p):
         p[0] = p[1]
@@ -167,40 +171,74 @@ class ModelicaParser(Parser):
     def store_as_list(p):
         p[0] = p[1:]
 
+    @staticmethod
+    def print_p(self, p):
+        for i in range(len(p)):
+            print(i, p[i])
+
+    # ----------------------------------------------------------
+    # Parsing Helper Rules
+    # ----------------------------------------------------------
+
+    def p_empty(self, p):
+        'empty : '
+        pass
+
+    def p_error(self, p):
+        if p is None:
+            print("Syntax error at root definition.")
+        else:
+            print("Syntax error at line {:d}, {:s}".
+                  format(p.lineno, p.value))
+
+    # ----------------------------------------------------------
+    # B.2.1 Stored Definition - Within
+    # ----------------------------------------------------------
+
+    # stored_definition:
+    # [ within [ name ] ";" ]
+    # { [ final ] class_definition ";" }
+
     def p_stored_definition(self, p):
         'stored_definition : within_opt class_definitions'
         p[0] = {'within': p[1], 'classes': p[2]}
-
-    def p_class_definitions(self, p):
-        '''class_definitions : class_definitions class_definition SEMI
-            | empty'''
-        if len(p) > 2:
-            if p[1] is None:
-                p[0] = {}
-            else:
-                p[0] = p[1]
-            p[0][p[2]['name']] = p[2]
 
     def p_within_opt(self, p):
         '''within_opt : WITHIN name_opt SEMI
             | empty'''
         p[0] = {'name': p[1]}
 
-    # TODO
-    def p_name(self, p):
-        '''name : IDENT'''
-        self.store_as_list(p)
-
-    # TODO
-    def p_names(self, p):
-        '''names : names '.' IDENT
-            | empty'''
-        self.store_as_list(p)
-
     def p_name_opt(self, p):
         '''name_opt : name
             | empty'''
-        p[0] = '' if p[1] is None else True
+        p[0] = False if p[1] is None else True
+
+    def p_class_definitions(self, p):
+        '''class_definitions : class_definitions final_opt class_definition SEMI
+            | empty'''
+        if len(p) > 2:  # not empty
+            class_defs = p[1]
+            final_opt = p[2]
+            class_def = p[3]
+            if class_defs is None:
+                class_defs = {}
+            if class_def is not None:
+                class_def['final'] = final_opt
+                class_defs[class_def['name']] = class_def
+            p[0] = class_defs
+
+    def p_final_opt(self, p):
+        '''final_opt : FINAL
+            | empty'''
+        p[0] = False if p[1] is None else True
+
+    # ----------------------------------------------------------
+    # B.2.2 Class Definition
+    # ----------------------------------------------------------
+
+    # class_definition :
+    # [ encapsulated ] class_prefixes
+    # class_specifier
 
     def p_class_definition(self, p):
         'class_definition : encapsulated_opt '\
@@ -210,22 +248,54 @@ class ModelicaParser(Parser):
         specifier = p[3]
         p[0] = {
             'encapsulated': encapsulated,
-            'class_prefixes': prefixes,
             'name': specifier['name'],
             'comment': specifier['comment'],
             'composition': specifier['composition'],
         }
+        for key in prefixes.keys():
+            p[0][key] = prefixes[key]
+
+    # class_prefixes :
+    # [ partial ]
+    # ( class | model | [ operator ] record | block |
+    # [ expandable ] connector | type |
+    # package | [ ( pure | impure ) ] [ operator ]
+    # function | operator )
 
     def p_class_prefixes(self, p):
         'class_prefixes : partial_opt class_type_opt'
-        p[0] = {
-            'partial': p[1],
-            'type': p[2]
-        }
+        p[0] = {'partial': p[1], 'type': p[2]}
 
-    def print_p(self, p):
-        for i in range(len(p)):
-            print(i, p[i])
+    def p_partial_opt(self, p):
+        '''partial_opt : PARTIAL
+            | empty'''
+        p[0] = False if p[1] is None else True
+
+    def p_class_type_opt(self, p):
+        '''class_type_opt : CLASS
+            | MODEL
+            | RECORD
+            | OPERATOR RECORD
+            | BLOCK
+            | CONNECTOR
+            | EXPANDABLE CONNECTOR
+            | TYPE
+            | PACKAGE
+            | PURE FUNCTION
+            | IMPURE FUNCTION
+            | PURE OPERATOR FUNCTION
+            | IMPURE OPERATOR FUNCTION
+            | OPERATOR'''
+        p[0] = string.join(p[1:len(p)])
+
+    # class_specifier :
+    # IDENT string_comment composition end IDENT
+    # | IDENT "=" base_prefix name [ array_subscripts ]
+    # [ class_modification ] comment
+    # | IDENT "=" enumeration "(" ( [enum_list] | ":" ) ")" comment
+    # | IDENT "=" der "(" name "," IDENT { "," IDENT } ")" comment
+    # | extends IDENT [ class_modification ] string_comment composition
+    # end IDENT
 
     def p_class_specifier(self, p):
         'class_specifier : IDENT string_comment_opt composition END IDENT'
@@ -244,6 +314,49 @@ class ModelicaParser(Parser):
             'comment': comment,
             'composition': composition,
         }
+
+    # base_prefix :
+    # type_prefix
+
+    # enum_list
+    # : enumeration_literal { "," enumeration_literal}
+    # enumeration_literal : IDENT comment
+
+    # composition :
+    # element_list
+    # { public element_list |
+    # protected element_list |
+    # equation_section |
+    # algorithm_section
+    # }
+    # [ external [ language_specification ]
+    # [ external_function_call ] [ annotation ] ";" ]
+    # [ annotation ";" ]
+
+    # language_specification :
+    # STRING
+
+    # external_function_call :
+    # [ component_reference "=" ]
+    # IDENT "(" [ expression_list ] ")"
+    # element_list :
+    # { element ";" }
+
+    # element :
+    # import_clause |
+    # extends_clause |
+    # [ redeclare ]
+    # [ final ]
+    # [ inner ] [ outer ]
+    # ( ( class_definition | component_clause) |
+    # replaceable ( class_definition | component_clause)247
+    # [constraining_clause comment])
+
+    # import_clause :
+    # import ( IDENT "=" name | name ["." ( "*" |
+    # "{" import_list "}" ) ] ) comment
+    # import_list :
+    # IDENT [ "," import_list ]
 
     def p_composition(self, p):
         '''composition : element_list composition_list'''
@@ -279,6 +392,176 @@ class ModelicaParser(Parser):
     def p_component_reference(self, p):
         '''component_reference : IDENT'''
         self.store_as_list(p)
+
+    # ----------------------------------------------------------
+    # B.2.3 Extends
+    # ----------------------------------------------------------
+
+    # extends_clause :
+    # extends name [ class_modification ] [annotation]
+
+    # constraining_clause :
+    # constrainedby name [ class_modification ]
+
+    # ----------------------------------------------------------
+    # B.2.4 Component Clause
+    # ----------------------------------------------------------
+
+    # component_clause:
+    # type_prefix type_specifier [ array_subscripts ] component_list
+    # type_prefix :
+    # [ flow | stream ]
+    # [ discrete | parameter | constant ] [ input | output ]
+
+    # type_specifier :
+    # name
+
+    # component_list :
+    # component_declaration { "," component_declaration }
+
+    # component_declaration :
+    # declaration [ condition_attribute ] comment
+
+    # condition_attribute:
+    # if expression
+
+    # declaration :
+    # IDENT [ array_subscripts ] [ modification ]
+
+    # ----------------------------------------------------------
+    # B.2.5 Modification
+    # ----------------------------------------------------------
+
+    # modification :
+    # class_modification [ "=" expression ]
+    # | "=" expression
+    # | ":=" expression
+
+    # class_modification :
+    # "(" [ argument_list ] ")"
+
+    # argument_list :
+    # argument { "," argument }
+
+    # argument :
+    # element_modification_or_replaceable
+    # | element_redeclaration
+
+    # element_modification_or_replaceable:
+    # [ each ] [ final ] ( element_modification | element_replaceable)
+
+    # element_modification :
+    # name [ modification ] string_comment
+
+    # element_redeclaration :
+    # redeclare [ each ] [ final ]
+    # ( ( short_class_definition | component_clause1) | element_replaceable )
+
+    # element_replaceable:
+    # replaceable ( short_class_definition | component_clause1)
+    # [constraining_clause]
+
+    # component_clause1 :
+    # type_prefix type_specifier component_declaration1
+
+    # component_declaration1 :
+    # declaration comment
+
+    # short_class_definition :
+    # class_prefixes IDENT "="
+    # ( base_prefix name [ array_subscripts ]
+    # [ class_modification ] comment |
+    # enumeration "(" ( [enum_list] | ":" ) ")" comment )
+
+    # ----------------------------------------------------------
+    # B.2.6 Equations
+    # ----------------------------------------------------------
+
+    # equation_section :
+    # [ initial ] equation { equation ";" }
+    # algorithm_section :
+    # [ initial ] algorithm { statement ";" }
+
+    # equation :
+    # ( simple_expression "=" expression
+    # | if_equation
+    # | for_equation
+    # | connect_clause
+    # | when_equation
+    # | name function_call_args )
+    # comment
+
+    # statement :
+    # ( component_reference ( ":=" expression | function_call_args )
+    # | "(" output_expression_list ")" ":="
+    # component_reference function_call_args
+    # | break
+    # | return
+    # | if_statement
+    # | for_statement
+    # | while_statement
+    # | when_statement )
+    # comment
+
+    # if_equation :
+    # if expression then
+    # { equation ";" }
+    # { elseif expression then
+    # { equation ";" }
+    # }
+    # [ else
+    # { equation ";" }
+    # ]
+    # end if
+
+    # if_statement :
+    # if expression then
+    # { statement ";" }
+    # { elseif expression then
+    # { statement ";" }
+    # }
+    # [ else
+    # { statement ";" }
+    # ]
+    # end if
+
+    # for_equation :
+    # for for_indices loop
+    # { equation ";" }
+    # end for
+
+    # for_statement :
+    # for for_indices loop
+    # { statement ";" }
+    # end for
+
+    # for_indices :
+    # for_index {"," for_index}
+
+    # for_index:
+    # IDENT [ in expression ]
+
+    # while_statement :
+    # while expression loop
+    # { statement ";" }
+    # end while
+
+    # when_equation :
+    # when expression then
+    # { equation ";" }
+    # { elsewhen expression then
+    # { equation ";" } }
+    # end when
+
+    # when_statement :
+    # when expression then
+    # { statement ";" }
+    # { elsewhen expression then
+    # { statement ";" } }
+    # end when
+
+    # connect_clause :
+    # connect "(" component_reference "," component_reference ")"
 
     def p_equation_section(self, p):
         'equation_section : EQUATION'
@@ -362,28 +645,6 @@ class ModelicaParser(Parser):
         '''component : IDENT EQUALS UNSIGNED_NUMBER'''
         p[0] = [p[1], p[2], p[3]]
 
-    def p_class_type_opt(self, p):
-        '''class_type_opt : CLASS
-            | MODEL
-            | RECORD
-            | OPERATOR RECORD
-            | BLOCK
-            | CONNECTOR
-            | EXPANDABLE CONNECTOR
-            | TYPE
-            | PACKAGE
-            | PURE FUNCTION
-            | IMPURE FUNCTION
-            | PURE OPERATOR FUNCTION
-            | IMPURE OPERATOR FUNCTION
-            | OPERATOR'''
-        p[0] = string.join(p[1:len(p)])
-
-    def p_partial_opt(self, p):
-        '''partial_opt : PARTIAL
-            | empty'''
-        p[0] = False if p[1] is None else True
-
     def p_encapsulated_opt(self, p):
         '''encapsulated_opt : ENCAPSULATED
             | empty'''
@@ -394,16 +655,110 @@ class ModelicaParser(Parser):
             | empty'''
         p[0] = p[1] if p[1] is None else p[1]
 
-    def p_empty(self, p):
-        'empty : '
-        pass
+    # ----------------------------------------------------------
+    # B.2.7 Expressions
+    # ----------------------------------------------------------
 
-    def p_error(self, p):
-        if p is None:
-            print("Syntax error at root definition.")
-        else:
-            print("Syntax error at line {:d}, {:s}".
-                  format(p.lineno, p.value))
+    # expression :
+    # simple_expression
+    # | if expression then expression { elseif expression then expression }
+    # else expression
+
+    # simple_expression :
+    # logical_expression [ ":" logical_expression [ ":" logical_expression ] ]
+
+    # logical_expression :
+    # logical_term { or logical_term }
+
+    # logical_term :
+    # logical_factor { and logical_factor }
+
+    # logical_factor :
+    # [ not ] relation
+
+    # relation :
+    # arithmetic_expression [ rel_op arithmetic_expression ]
+
+    # rel_op :
+    # "<" | "<=" | ">" | ">=" | "==" | "<>"
+
+    # arithmetic_expression :
+    # [ add_op ] term { add_op term }
+
+    # add_op :
+    # "+" | "-" | ".+" | ".-"
+
+    # term :
+    # factor { mul_op factor }
+
+    # mul_op :
+    # "*" | "/" | ".*" | "./"
+
+    # factor :
+    # primary [ ("^" | ".^") primary ]
+
+    # primary :
+    # UNSIGNED_NUMBER
+    # | STRING
+    # | false
+    # | true
+    # | ( name | der | initial ) function_call_args
+    # | component_reference
+    # | "(" output_expression_list ")"
+    # | "[" expression_list { ";" expression_list } "]"
+    # | "{" function_arguments "}"
+    # | end
+
+    # name :
+    # [ "." ] IDENT { "." IDENT }
+
+    # component_reference :
+    # [ "." ] IDENT [ array_subscripts ] { "." IDENT [ array_subscripts ] }
+
+    # function_call_args :
+    # "(" [ function_arguments ] ")"
+
+    # function_arguments :
+    # function_argument [ "," function_arguments | for for_indices ]
+    # | named_arguments
+
+    # named_arguments: named_argument [ "," named_arguments ]
+
+    # named_argument: IDENT "=" function_argument
+
+    # function_argument :
+    # function name "(" [ named_arguments ] ")" | expression
+    # output_expression_list:
+    # [ expression ] { "," [ expression ] }
+
+    # expression_list :
+    # expression { "," expression }
+
+    # array_subscripts :
+    # "[" subscript { "," subscript } "]"
+
+    # subscript :
+    # ":" | expression
+
+    # comment :
+    # string_comment [ annotation ]
+
+    # string_comment :
+    # [ STRING { "+" STRING } ]
+
+    # annotation :
+    # annotation class_modification
+
+    def p_name(self, p):
+        '''name : IDENT'''
+        self.store_as_list(p)
+
+    # TODO
+    def p_names(self, p):
+        '''names : names '.' IDENT
+            | empty'''
+        self.store_as_list(p)
+
 
 if __name__ == '__main__':
     parser = ModelicaParser()
