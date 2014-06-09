@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os
-import string
 import sys
 
 import ply.lex as lex
@@ -78,6 +77,13 @@ class Parser:
 
 class ModelicaParser(Parser):
 
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Tokens
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    # ----------------------------------------------------------
+    # Reserved Keywords
+    # ----------------------------------------------------------
     keywords = (
         'algorithm', 'and', 'annotation', 'assert', 'block',
         'break', 'class', 'connect', 'connector', 'constant',
@@ -93,15 +99,31 @@ class ModelicaParser(Parser):
 
     reserved = {key: key.upper() for key in keywords}
 
-    tokens = reserved.values() + [
-        'IDENT', 'SEMI', 'STRING_COMMENT', 'EQUALS',
-        'COMMA', 'UNSIGNED_NUMBER', 'STRING'
-        ]
+    # ----------------------------------------------------------
+    # Symbols
+    # ----------------------------------------------------------
+    symbols = {
+        '\;': 'SEMI',
+        '\=': 'EQUALS',
+        '\+': 'PLUS',
+        '\,': 'COMMA',
+        '\(': 'LPAREN',
+        '\)': 'RPAREN',
+    }
+    # create token handling for symbols
+    for key in symbols.keys():
+        exec("t_{:s} = '{:s}'".format(symbols[key], key))
+
+    # ----------------------------------------------------------
+    # Token Processing
+    # ----------------------------------------------------------
+    tokens = [
+        'IDENT',
+        'UNSIGNED_NUMBER',
+        'STRING'
+    ] + reserved.values() + symbols.values()
 
     t_ignore = ' \t'
-    t_SEMI = r';'
-    t_EQUALS = r'='
-    t_COMMA = r','
 
     re_dict = {
         'digit': r'[0-9]',
@@ -114,7 +136,6 @@ class ModelicaParser(Parser):
         ('q_ident', r"'({q_char}|{s_escape})+'"),
         ('ident', r'({nondigit} ({digit}|{nondigit})*) | {q_ident}'),
         ('string', r'\"({s_char}|{s_escape})*\"'),
-        # ('string', r'\"({s_char})*\"'),
         ('unsigned_integer', r'{digit}+'),
         ('unsigned_number', r'{unsigned_integer}([\.]{unsigned_integer}?)?'),
     ]
@@ -132,6 +153,7 @@ class ModelicaParser(Parser):
 
     @TOKEN(re_dict['string'])
     def t_STRING(self, t):
+        t.value = t.value[1:-1]  # remove double quotes
         return t
 
     def t_newline(self, t):
@@ -144,7 +166,9 @@ class ModelicaParser(Parser):
         t.lexer.skip(1)
         return None
 
-    # Parsing rules
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Parsing Rules
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     # EBNF to BNF
     # {E} -> X = empty | X E
@@ -160,12 +184,12 @@ class ModelicaParser(Parser):
     # ----------------------------------------------------------
 
     @staticmethod
-    def list_extend(p):
-        p[0] = p[1]
+    def list_extend(p, i1=0, i2=2):
+        p[0] = p[i1]
         if p[0] is None:
             p[0] = []
         if len(p) > 2:
-            p[0].extend([p[2]])
+            p[0].extend([p[i2]])
 
     @staticmethod
     def store_as_list(p):
@@ -286,7 +310,7 @@ class ModelicaParser(Parser):
             | PURE OPERATOR FUNCTION
             | IMPURE OPERATOR FUNCTION
             | OPERATOR'''
-        p[0] = string.join(p[1:len(p)])
+        p[0] = ''.join(p[1:len(p)])
 
     # class_specifier :
     # IDENT string_comment composition end IDENT
@@ -320,8 +344,8 @@ class ModelicaParser(Parser):
     # base_prefix :
     # type_prefix
 
-    def p_base_prefix(self, p):
-        'base_prefix : type_prefix'
+    # def p_base_prefix(self, p):
+    #     'base_prefix : type_prefix'
 
     # enum_list
     # : enumeration_literal { "," enumeration_literal}
@@ -357,9 +381,9 @@ class ModelicaParser(Parser):
     # language_specification :
     # STRING
 
-    def p_language_specification(self, p):
-        'language_specification : STRING'
-        self.store_as_list(p)
+    # def p_language_specification(self, p):
+    #     'language_specification : STRING'
+    #     self.store_as_list(p)
 
     # external_function_call :
     # [ component_reference "=" ]
@@ -472,12 +496,28 @@ class ModelicaParser(Parser):
     # class_modification :
     # "(" [ argument_list ] ")"
 
+    # def p_class_modification(self, p):
+    #     'class_modification : LPAREN argument_list_opt RPAREN'
+    #     p[0] = p[2]
+
     # argument_list :
     # argument { "," argument }
+
+    # def p_arguemnt_list(self, p):
+    #     'argument_list : argument arguement_list_part'
+    #     p[0] = p[1:]
+    # def p_argument_list_part(self, p):
+    #     '''argument_list_part : argument_list_part COMMA argument
+    #         | empty'''
+    #     p[0] = p[1]
 
     # argument :
     # element_modification_or_replaceable
     # | element_redeclaration
+
+    # TODO
+    # def p_argument(self, p):
+    #     'argument : IDENT'
 
     # element_modification_or_replaceable:
     # [ each ] [ final ] ( element_modification | element_replaceable)
@@ -644,11 +684,6 @@ class ModelicaParser(Parser):
             | empty'''
         p[0] = False if p[1] is None else True
 
-    def p_string_comment_opt(self, p):
-        '''string_comment_opt : STRING
-            | empty'''
-        p[0] = p[1] if p[1] is None else p[1]
-
     # ----------------------------------------------------------
     # B.2.7 Expressions
     # ----------------------------------------------------------
@@ -712,23 +747,23 @@ class ModelicaParser(Parser):
         self.store_as_list(p)
 
     # TODO
-    def p_names(self, p):
-        '''names : names '.' IDENT
-            | empty'''
-        self.store_as_list(p)
+    # def p_names(self, p):
+    #     '''names : names '.' IDENT
+    #         | empty'''
+    #     self.store_as_list(p)
 
     # component_reference :
     # [ "." ] IDENT [ array_subscripts ] { "." IDENT [ array_subscripts ] }
 
-    def p_component_reference_opt(self, p):
-        '''component_refefrence_opt : component_reference EQUALS
-            | empty'''
-        self.store_as_list(p)
+    # def p_component_reference_opt(self, p):
+    #     '''component_refefrence_opt : component_reference EQUALS
+    #         | empty'''
+    #     self.store_as_list(p)
 
     # TODO
-    def p_component_reference(self, p):
-        '''component_reference : IDENT'''
-        self.store_as_list(p)
+    # def p_component_reference(self, p):
+    #     '''component_reference : IDENT'''
+    #     self.store_as_list(p)
 
     # function_call_args :
     # "(" [ function_arguments ] ")"
@@ -761,16 +796,36 @@ class ModelicaParser(Parser):
     # string_comment :
     # [ STRING { "+" STRING } ]
 
+    def p_string_comment_part(self, p):
+        '''string_comment_part : string_comment_part PLUS STRING
+            | empty'''
+        if (len(p) > 2):
+            if p[1] is None:
+                p[0] = p[3]
+            else:
+                p[0] = ''.join([p[1], p[3]])
+
+    def p_string_comment(self, p):
+        'string_comment : STRING string_comment_part'
+        p[0] = ''.join([p[1], p[2]])
+
+    def p_string_comment_opt(self, p):
+        '''string_comment_opt : string_comment
+            | empty'''
+        p[0] = p[1]
+
     # annotation :
     # annotation class_modification
-
+    # def p_annotation(self, p):
+    #     'annotation : STRING'
+    #     p[0] = p[1]
 
 if __name__ == '__main__':
     parser = ModelicaParser()
     parser.parse('''
-    class hello1 "hello"
+    class hello1 "hello" + " bye"
     end hello1;
-    class hello2 "I like modelica"
+    class hello2 "hello world" + " example"
         flow discrete input Real a=1, b=2;
     public
         Real c=3;
