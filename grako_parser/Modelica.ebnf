@@ -15,6 +15,9 @@ class_prefixes =
     connector | type | package | [ ( pure | impure ) ] [ operator ] 
     function | operator );
 
+class_specifier = IDENT [string_comment] composition end IDENT;
+
+(*
 class_specifier =
     IDENT string_comment composition end IDENT
     | IDENT "=" base_prefix name [ array_subscripts ]
@@ -23,6 +26,7 @@ class_specifier =
     | IDENT "=" der "(" name "," IDENT { "," IDENT } ")" comment
     | extends IDENT [ class_modification ] string_comment composition
         end IDENT;
+*)
 
 base_prefix =
     type_prefix;
@@ -31,6 +35,9 @@ enum_list = enumeration_literal { "," enumeration_literal};
 
 enumeration_literal = IDENT comment;
 
+
+composition = element_list;
+(*
 composition =
     element_list
     { public element_list |
@@ -41,6 +48,7 @@ composition =
     [ external [ language_specification ]
                [ external_function_call ] [ annotation ] ";" ]
     [ annotation ";" ];
+*)
 
 language_specification =
     STRING;
@@ -52,6 +60,8 @@ external_function_call =
 element_list =
     { element ";" };
 
+element = component_clause;
+(*
 element =
     import_clause |
     extends_clause |
@@ -61,7 +71,7 @@ element =
     ( ( class_definition | component_clause) |
     replaceable ( class_definition | component_clause)
     [constraining_clause comment]);
-
+*)
 
 import_clause =
  import ( IDENT "=" name | name ["." ( "*" | "{" import_list "}" ) ] )
@@ -80,15 +90,22 @@ constraining_clause =
 
 (* B.2.4 Component Clause *)
 
+component_clause = type_prefix IDENT;
+(*
 component_clause =
     type_prefix type_specifier [ array_subscripts ] component_list;
+*)
 
 type_prefix =
     [ flow | stream ]
     [ discrete | parameter | constant ] [ input | output ];
 
+(*
 type_specifier =
     name;
+*)
+
+type_specifier = IDENT;
 
 component_list =
     component_declaration { "," component_declaration };
@@ -286,8 +303,11 @@ primary =
     | "{" function_arguments "}"
     | end;
 
+name = IDENT;
+(*
 name =
     [ "." ] IDENT { "." IDENT };
+*)
 
 component_reference =
     [ "." ] IDENT [ array_subscripts ] { "." IDENT [ array_subscripts ] };
@@ -388,27 +408,14 @@ when = 'when';
 while = 'while';
 within = 'within';
 
-keyword = (algorithm|and|annotation|assert|block|break|class|connect|
-    connector|constant|constrainedby|der|discrete|each|else|elseif|
-    elsewhen|encapsulated|end|enumeration|equation|expandable|extends|
-    external|false|final|flow|for|function|if|import|impure|in|initial|
-    inner|input|loop|model|not|operator|or|outer|output|package|parameter|
-    partial|protected|public|pure|record|redeclare|return|stream|then|
-    true|type|when|while|within);
+re_IDENT = ?/[_a-zA-Z][_a-zA-Z0-9]*/?;
+re_STRING = ?/"[^"]+"/?;
+re_UNSIGNED_NUMBER = ?/[0-9]+([\.] [0-9]+)?[[eE][\+\-]?[0-9]+/?;
 
-IDENT = NONDIGIT { DIGIT | NONDIGIT } | Q_IDENT;
-Q_IDENT = ";" ( Q_CHAR | S_ESCAPE ) { Q_CHAR | S_ESCAPE } "'";
-NONDIGIT = ?/[_a-zA_Z]/?;
-STRING = '"' { S_CHAR | S_ESCAPE } '"';
-S_CHAR = ?/[\s]/?;
-Q_CHAR = NONDIGIT | DIGIT | "!" | "#" | "$" | "%" | "&" | "(" | ")" | "*" | "+" | "," |
-    "-" | "." | "/" | ":" | ";" | "<" | ">" | "=" | "?" | "@" | "[" | "]" | "^" |
-    "{" | "}" | "|" | "~" | " ";
-S_ESCAPE = "\'" | '\"' | "\?" | "\\" |
-    "\a" | "\b" | "\f" | "\n" | "\r" | "\t" | "\v";
-DIGIT = ?/[0-9]/?;
-UNSIGNED_INTEGER = DIGIT { DIGIT };
-UNSIGNED_NUMBER = UNSIGNED_INTEGER [ "." [ UNSIGNED_INTEGER ] ]
-    [ ( "e" | "E" ) [ "+" | "-" ] UNSIGNED_INTEGER ];
+(* creating rules so whitespace skipped *)
+IDENT = re_IDENT; 
+STRING = re_STRING;
+UNSIGNED_NUMBER = re_UNSIGNED_NUMBER;
+
 
 (*vi:ts=4:sw=4:expandtab:*)

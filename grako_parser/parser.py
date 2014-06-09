@@ -13,7 +13,7 @@ from grako.parsing import * # noqa
 from grako.exceptions import * # noqa
 
 
-__version__ = '14.158.22.32.49'
+__version__ = '14.160.22.15.56'
 
 
 class ModelicaParser(Parser):
@@ -83,62 +83,12 @@ class ModelicaParser(Parser):
 
     @rule_def
     def _class_specifier_(self):
-        with self._choice():
-            with self._option():
-                self._IDENT_()
-                self._string_comment_()
-                self._composition_()
-                self._end_()
-                self._IDENT_()
-            with self._option():
-                self._IDENT_()
-                self._token('=')
-                self._base_prefix_()
-                self._name_()
-                with self._optional():
-                    self._array_subscripts_()
-                with self._optional():
-                    self._class_modification_()
-                self._comment_()
-            with self._option():
-                self._IDENT_()
-                self._token('=')
-                self._enumeration_()
-                self._token('(')
-                with self._group():
-                    with self._choice():
-                        with self._option():
-                            with self._optional():
-                                self._enum_list_()
-                        with self._option():
-                            self._token(':')
-                        self._error('expecting one of: :')
-                self._token(')')
-                self._comment_()
-            with self._option():
-                self._IDENT_()
-                self._token('=')
-                self._der_()
-                self._token('(')
-                self._name_()
-                self._token(',')
-                self._IDENT_()
-                def block1():
-                    self._token(',')
-                    self._IDENT_()
-                self._closure(block1)
-                self._token(')')
-                self._comment_()
-            with self._option():
-                self._extends_()
-                self._IDENT_()
-                with self._optional():
-                    self._class_modification_()
-                self._string_comment_()
-                self._composition_()
-                self._end_()
-                self._IDENT_()
-            self._error('no available options')
+        self._IDENT_()
+        with self._optional():
+            self._string_comment_()
+        self._composition_()
+        self._end_()
+        self._IDENT_()
 
     @rule_def
     def _base_prefix_(self):
@@ -160,32 +110,6 @@ class ModelicaParser(Parser):
     @rule_def
     def _composition_(self):
         self._element_list_()
-        def block0():
-            with self._choice():
-                with self._option():
-                    self._public_()
-                    self._element_list_()
-                with self._option():
-                    self._protected_()
-                    self._element_list_()
-                with self._option():
-                    self._equation_section_()
-                with self._option():
-                    self._algorithm_section_()
-                self._error('no available options')
-        self._closure(block0)
-        with self._optional():
-            self._external_()
-            with self._optional():
-                self._language_specification_()
-            with self._optional():
-                self._external_function_call_()
-            with self._optional():
-                self._annotation_()
-            self._token(';')
-        with self._optional():
-            self._annotation_()
-            self._token(';')
 
     @rule_def
     def _language_specification_(self):
@@ -211,44 +135,7 @@ class ModelicaParser(Parser):
 
     @rule_def
     def _element_(self):
-        with self._choice():
-            with self._option():
-                self._import_clause_()
-            with self._option():
-                self._extends_clause_()
-            with self._option():
-                with self._optional():
-                    self._redeclare_()
-                with self._optional():
-                    self._final_()
-                with self._optional():
-                    self._inner_()
-                with self._optional():
-                    self._outer_()
-                with self._group():
-                    with self._choice():
-                        with self._option():
-                            with self._group():
-                                with self._choice():
-                                    with self._option():
-                                        self._class_definition_()
-                                    with self._option():
-                                        self._component_clause_()
-                                    self._error('no available options')
-                        with self._option():
-                            self._replaceable_()
-                            with self._group():
-                                with self._choice():
-                                    with self._option():
-                                        self._class_definition_()
-                                    with self._option():
-                                        self._component_clause_()
-                                    self._error('no available options')
-                            with self._optional():
-                                self._constraining_clause_()
-                                self._comment_()
-                        self._error('no available options')
-            self._error('no available options')
+        self._component_clause_()
 
     @rule_def
     def _import_clause_(self):
@@ -301,10 +188,7 @@ class ModelicaParser(Parser):
     @rule_def
     def _component_clause_(self):
         self._type_prefix_()
-        self._type_specifier_()
-        with self._optional():
-            self._array_subscripts_()
-        self._component_list_()
+        self._IDENT_()
 
     @rule_def
     def _type_prefix_(self):
@@ -334,7 +218,7 @@ class ModelicaParser(Parser):
 
     @rule_def
     def _type_specifier_(self):
-        self._name_()
+        self._IDENT_()
 
     @rule_def
     def _component_list_(self):
@@ -918,13 +802,7 @@ class ModelicaParser(Parser):
 
     @rule_def
     def _name_(self):
-        with self._optional():
-            self._token('.')
         self._IDENT_()
-        def block0():
-            self._token('.')
-            self._IDENT_()
-        self._closure(block0)
 
     @rule_def
     def _component_reference_(self):
@@ -1287,313 +1165,28 @@ class ModelicaParser(Parser):
         self._token('within')
 
     @rule_def
-    def _keyword_(self):
-        with self._group():
-            with self._choice():
-                with self._option():
-                    self._algorithm_()
-                with self._option():
-                    self._and_()
-                with self._option():
-                    self._annotation_()
-                with self._option():
-                    self._assert_()
-                with self._option():
-                    self._block_()
-                with self._option():
-                    self._break_()
-                with self._option():
-                    self._class_()
-                with self._option():
-                    self._connect_()
-                with self._option():
-                    self._connector_()
-                with self._option():
-                    self._constant_()
-                with self._option():
-                    self._constrainedby_()
-                with self._option():
-                    self._der_()
-                with self._option():
-                    self._discrete_()
-                with self._option():
-                    self._each_()
-                with self._option():
-                    self._else_()
-                with self._option():
-                    self._elseif_()
-                with self._option():
-                    self._elsewhen_()
-                with self._option():
-                    self._encapsulated_()
-                with self._option():
-                    self._end_()
-                with self._option():
-                    self._enumeration_()
-                with self._option():
-                    self._equation_()
-                with self._option():
-                    self._expandable_()
-                with self._option():
-                    self._extends_()
-                with self._option():
-                    self._external_()
-                with self._option():
-                    self._false_()
-                with self._option():
-                    self._final_()
-                with self._option():
-                    self._flow_()
-                with self._option():
-                    self._for_()
-                with self._option():
-                    self._function_()
-                with self._option():
-                    self._if_()
-                with self._option():
-                    self._import_()
-                with self._option():
-                    self._impure_()
-                with self._option():
-                    self._in_()
-                with self._option():
-                    self._initial_()
-                with self._option():
-                    self._inner_()
-                with self._option():
-                    self._input_()
-                with self._option():
-                    self._loop_()
-                with self._option():
-                    self._model_()
-                with self._option():
-                    self._not_()
-                with self._option():
-                    self._operator_()
-                with self._option():
-                    self._or_()
-                with self._option():
-                    self._outer_()
-                with self._option():
-                    self._output_()
-                with self._option():
-                    self._package_()
-                with self._option():
-                    self._parameter_()
-                with self._option():
-                    self._partial_()
-                with self._option():
-                    self._protected_()
-                with self._option():
-                    self._public_()
-                with self._option():
-                    self._pure_()
-                with self._option():
-                    self._record_()
-                with self._option():
-                    self._redeclare_()
-                with self._option():
-                    self._return_()
-                with self._option():
-                    self._stream_()
-                with self._option():
-                    self._then_()
-                with self._option():
-                    self._true_()
-                with self._option():
-                    self._type_()
-                with self._option():
-                    self._when_()
-                with self._option():
-                    self._while_()
-                with self._option():
-                    self._within_()
-                self._error('no available options')
+    def _re_IDENT_(self):
+        self._pattern(r'[_a-zA-Z][_a-zA-Z0-9]*')
+
+    @rule_def
+    def _re_STRING_(self):
+        self._pattern(r'"[^"]+"')
+
+    @rule_def
+    def _re_UNSIGNED_NUMBER_(self):
+        self._pattern(r'[0-9]+([\.] [0-9]+)?[[eE][\+\-]?[0-9]+')
 
     @rule_def
     def _IDENT_(self):
-        with self._choice():
-            with self._option():
-                self._NONDIGIT_()
-                def block0():
-                    with self._choice():
-                        with self._option():
-                            self._DIGIT_()
-                        with self._option():
-                            self._NONDIGIT_()
-                        self._error('no available options')
-                self._closure(block0)
-            with self._option():
-                self._Q_IDENT_()
-            self._error('no available options')
-
-    @rule_def
-    def _Q_IDENT_(self):
-        self._token(';')
-        with self._group():
-            with self._choice():
-                with self._option():
-                    self._Q_CHAR_()
-                with self._option():
-                    self._S_ESCAPE_()
-                self._error('no available options')
-        def block1():
-            with self._choice():
-                with self._option():
-                    self._Q_CHAR_()
-                with self._option():
-                    self._S_ESCAPE_()
-                self._error('no available options')
-        self._closure(block1)
-        self._token("'")
-
-    @rule_def
-    def _NONDIGIT_(self):
-        self._pattern(r'[_a-zA_Z]')
+        self._re_IDENT_()
 
     @rule_def
     def _STRING_(self):
-        self._token('"')
-        def block0():
-            with self._choice():
-                with self._option():
-                    self._S_CHAR_()
-                with self._option():
-                    self._S_ESCAPE_()
-                self._error('no available options')
-        self._closure(block0)
-        self._token('"')
-
-    @rule_def
-    def _S_CHAR_(self):
-        self._pattern(r'[\s]')
-
-    @rule_def
-    def _Q_CHAR_(self):
-        with self._choice():
-            with self._option():
-                self._NONDIGIT_()
-            with self._option():
-                self._DIGIT_()
-            with self._option():
-                self._token('!')
-            with self._option():
-                self._token('#')
-            with self._option():
-                self._token('$')
-            with self._option():
-                self._token('%')
-            with self._option():
-                self._token('&')
-            with self._option():
-                self._token('(')
-            with self._option():
-                self._token(')')
-            with self._option():
-                self._token('*')
-            with self._option():
-                self._token('+')
-            with self._option():
-                self._token(',')
-            with self._option():
-                self._token('-')
-            with self._option():
-                self._token('.')
-            with self._option():
-                self._token('/')
-            with self._option():
-                self._token(':')
-            with self._option():
-                self._token(';')
-            with self._option():
-                self._token('<')
-            with self._option():
-                self._token('>')
-            with self._option():
-                self._token('=')
-            with self._option():
-                self._token('?')
-            with self._option():
-                self._token('@')
-            with self._option():
-                self._token('[')
-            with self._option():
-                self._token(']')
-            with self._option():
-                self._token('^')
-            with self._option():
-                self._token('{')
-            with self._option():
-                self._token('}')
-            with self._option():
-                self._token('|')
-            with self._option():
-                self._token('~')
-            with self._option():
-                self._token(' ')
-            self._error('expecting one of: . ; ! :   = ~ # < { ? % > } $ | & [ @ ] ) ( ^ + * - , /')
-
-    @rule_def
-    def _S_ESCAPE_(self):
-        with self._choice():
-            with self._option():
-                self._token("'")
-            with self._option():
-                self._token('"')
-            with self._option():
-                self._token('\\?')
-            with self._option():
-                self._token('\\')
-            with self._option():
-                self._token('\x07')
-            with self._option():
-                self._token('\x08')
-            with self._option():
-                self._token('\x0c')
-            with self._option():
-                self._token('\n')
-            with self._option():
-                self._token('\r')
-            with self._option():
-                self._token('\t')
-            with self._option():
-                self._token('\x0b')
-            self._error('expecting one of: \x0b \x07 \t " \\? \r \\ \x0c \' \n \x08')
-
-    @rule_def
-    def _DIGIT_(self):
-        self._pattern(r'[0-9]')
-
-    @rule_def
-    def _UNSIGNED_INTEGER_(self):
-        self._DIGIT_()
-        def block0():
-            self._DIGIT_()
-        self._closure(block0)
+        self._re_STRING_()
 
     @rule_def
     def _UNSIGNED_NUMBER_(self):
-        self._UNSIGNED_INTEGER_()
-        with self._optional():
-            self._token('.')
-            with self._optional():
-                self._UNSIGNED_INTEGER_()
-        with self._optional():
-            with self._group():
-                with self._choice():
-                    with self._option():
-                        self._token('e')
-                    with self._option():
-                        self._token('E')
-                    self._error('expecting one of: E e')
-            with self._optional():
-                with self._choice():
-                    with self._option():
-                        self._token('+')
-                    with self._option():
-                        self._token('-')
-                    self._error('expecting one of: + -')
-            self._UNSIGNED_INTEGER_()
+        self._re_UNSIGNED_NUMBER_()
 
 
 class ModelicaSemanticParser(CheckSemanticsMixin, ModelicaParser):
@@ -2000,34 +1593,19 @@ class ModelicaSemantics(object):
     def within(self, ast):
         return ast
 
-    def keyword(self, ast):
+    def re_IDENT(self, ast):
+        return ast
+
+    def re_STRING(self, ast):
+        return ast
+
+    def re_UNSIGNED_NUMBER(self, ast):
         return ast
 
     def IDENT(self, ast):
         return ast
 
-    def Q_IDENT(self, ast):
-        return ast
-
-    def NONDIGIT(self, ast):
-        return ast
-
     def STRING(self, ast):
-        return ast
-
-    def S_CHAR(self, ast):
-        return ast
-
-    def Q_CHAR(self, ast):
-        return ast
-
-    def S_ESCAPE(self, ast):
-        return ast
-
-    def DIGIT(self, ast):
-        return ast
-
-    def UNSIGNED_INTEGER(self, ast):
         return ast
 
     def UNSIGNED_NUMBER(self, ast):
