@@ -297,8 +297,10 @@ class ModelicaParser(Parser):
     # | extends IDENT [ class_modification ] string_comment composition
     # end IDENT
 
+    # TODO
     def p_class_specifier(self, p):
-        'class_specifier : IDENT string_comment_opt composition END IDENT'
+        'class_specifier : IDENT string_comment_opt '\
+            'composition END IDENT'
         name = p[1]
         comment = p[2]
         composition = p[3]
@@ -318,6 +320,9 @@ class ModelicaParser(Parser):
     # base_prefix :
     # type_prefix
 
+    def p_base_prefix(self, p):
+        'base_prefix : type_prefix'
+
     # enum_list
     # : enumeration_literal { "," enumeration_literal}
     # enumeration_literal : IDENT comment
@@ -332,31 +337,6 @@ class ModelicaParser(Parser):
     # [ external [ language_specification ]
     # [ external_function_call ] [ annotation ] ";" ]
     # [ annotation ";" ]
-
-    # language_specification :
-    # STRING
-
-    # external_function_call :
-    # [ component_reference "=" ]
-    # IDENT "(" [ expression_list ] ")"
-    # element_list :
-    # { element ";" }
-
-    # element :
-    # import_clause |
-    # extends_clause |
-    # [ redeclare ]
-    # [ final ]
-    # [ inner ] [ outer ]
-    # ( ( class_definition | component_clause) |
-    # replaceable ( class_definition | component_clause)247
-    # [constraining_clause comment])
-
-    # import_clause :
-    # import ( IDENT "=" name | name ["." ( "*" |
-    # "{" import_list "}" ) ] ) comment
-    # import_list :
-    # IDENT [ "," import_list ]
 
     def p_composition(self, p):
         '''composition : element_list composition_list'''
@@ -374,24 +354,49 @@ class ModelicaParser(Parser):
             | empty'''
         self.list_extend(p)
 
+    # language_specification :
+    # STRING
+
     def p_language_specification(self, p):
         'language_specification : STRING'
         self.store_as_list(p)
+
+    # external_function_call :
+    # [ component_reference "=" ]
+    # IDENT "(" [ expression_list ] ")"
+
+    # element_list :
+    # { element ";" }
+
+    def p_element_list(self, p):
+        '''element_list : element_list element SEMI
+            | empty'''
+        self.store_as_list(p)
+
+    # element :
+    # import_clause |
+    # extends_clause |
+    # [ redeclare ]
+    # [ final ]
+    # [ inner ] [ outer ]
+    # ( ( class_definition | component_clause) |
+    # replaceable ( class_definition | component_clause)247
+    # [constraining_clause comment])
+
+    def p_element(self, p):
+        'element : component_clause'
+        p[0] = p[1]
+
+    # import_clause :
+    # import ( IDENT "=" name | name ["." ( "*" |
+    # "{" import_list "}" ) ] ) comment
+    # import_list :
+    # IDENT [ "," import_list ]
 
     # def p_external_function_call(self, p):
     #     'external_function_call : component_reference_opt '\
     #         ' IDENT "(" expression_list ")"'
     #     self.store_as_list(p)
-
-    def p_component_reference_opt(self, p):
-        '''component_refefrence_opt : component_reference EQUALS
-            | empty'''
-        self.store_as_list(p)
-
-    # TODO
-    def p_component_reference(self, p):
-        '''component_reference : IDENT'''
-        self.store_as_list(p)
 
     # ----------------------------------------------------------
     # B.2.3 Extends
@@ -409,9 +414,32 @@ class ModelicaParser(Parser):
 
     # component_clause:
     # type_prefix type_specifier [ array_subscripts ] component_list
+
     # type_prefix :
     # [ flow | stream ]
     # [ discrete | parameter | constant ] [ input | output ]
+    def p_type_prefix(self, p):
+        'type_prefix : type_prefix_1 type_prefix_2 type_prefix_3'
+        p[0] = [p[1], p[2], p[3]]
+
+    def p_type_prefix1(self, p):
+        '''type_prefix_1 : FLOW
+            | STREAM
+            | empty'''
+        p[0] = p[1]
+
+    def p_type_prefix2(self, p):
+        '''type_prefix_2 : DISCRETE
+            | PARAMETER
+            | CONSTANT
+            | empty'''
+        p[0] = p[1]
+
+    def p_type_prefix3(self, p):
+        '''type_prefix_3 : INPUT
+            | OUTPUT
+            | empty'''
+        p[0] = p[1]
 
     # type_specifier :
     # name
@@ -479,8 +507,19 @@ class ModelicaParser(Parser):
 
     # equation_section :
     # [ initial ] equation { equation ";" }
+
+    # TODO
+    def p_equation_section(self, p):
+        'equation_section : EQUATION'
+        self.store_as_list(p)
+
     # algorithm_section :
     # [ initial ] algorithm { statement ";" }
+
+    # TODO
+    def p_algorithm_section(self, p):
+        'algorithm_section : ALGORITHM'
+        self.store_as_list(p)
 
     # equation :
     # ( simple_expression "=" expression
@@ -563,28 +602,6 @@ class ModelicaParser(Parser):
     # connect_clause :
     # connect "(" component_reference "," component_reference ")"
 
-    def p_equation_section(self, p):
-        'equation_section : EQUATION'
-        self.store_as_list(p)
-
-    def p_algorithm_section(self, p):
-        'algorithm_section : ALGORITHM'
-        self.store_as_list(p)
-
-    def p_element_list(self, p):
-        '''element_list : element_list element SEMI
-            | empty'''
-        if len(p) > 2:
-            if p[1] is None:
-                p[0] = []
-            else:
-                p[0] = p[1]
-            p[0] += [p[2]]
-
-    def p_element(self, p):
-        'element : component_clause'
-        p[0] = p[1]
-
     def p_component_clause(self, p):
         'component_clause : type_prefix type_specifier '\
             'array_subscripts_opt component_list'
@@ -594,29 +611,6 @@ class ModelicaParser(Parser):
             'array_subscripts': p[3],
             'component_list': p[4],
         }
-
-    def p_type_prefix(self, p):
-        'type_prefix : type_prefix_1 type_prefix_2 type_prefix_3'
-        p[0] = [p[1], p[2], p[3]]
-
-    def p_type_prefix1(self, p):
-        '''type_prefix_1 : FLOW
-            | STREAM
-            | empty'''
-        p[0] = p[1]
-
-    def p_type_prefix2(self, p):
-        '''type_prefix_2 : DISCRETE
-            | PARAMETER
-            | CONSTANT
-            | empty'''
-        p[0] = p[1]
-
-    def p_type_prefix3(self, p):
-        '''type_prefix_3 : INPUT
-            | OUTPUT
-            | empty'''
-        p[0] = p[1]
 
     def p_type_specifier(self, p):
         'type_specifier : name'
@@ -714,6 +708,16 @@ class ModelicaParser(Parser):
 
     # component_reference :
     # [ "." ] IDENT [ array_subscripts ] { "." IDENT [ array_subscripts ] }
+
+    def p_component_reference_opt(self, p):
+        '''component_refefrence_opt : component_reference EQUALS
+            | empty'''
+        self.store_as_list(p)
+
+    # TODO
+    def p_component_reference(self, p):
+        '''component_reference : IDENT'''
+        self.store_as_list(p)
 
     # function_call_args :
     # "(" [ function_arguments ] ")"
