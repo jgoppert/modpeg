@@ -444,6 +444,10 @@ class ModelicaParser(Parser):
     # type_specifier :
     # name
 
+    def p_type_specifier(self, p):
+        'type_specifier : name'
+        p[0] = p[1]
+
     # component_list :
     # component_declaration { "," component_declaration }
 
@@ -612,10 +616,6 @@ class ModelicaParser(Parser):
             'component_list': p[4],
         }
 
-    def p_type_specifier(self, p):
-        'type_specifier : name'
-        p[0] = p[1]
-
     # TODO
     def p_array_subscripts_opt(self, p):
         '''array_subscripts_opt : empty'''
@@ -706,6 +706,17 @@ class ModelicaParser(Parser):
     # name :
     # [ "." ] IDENT { "." IDENT }
 
+    # TODO
+    def p_name(self, p):
+        '''name : IDENT'''
+        self.store_as_list(p)
+
+    # TODO
+    def p_names(self, p):
+        '''names : names '.' IDENT
+            | empty'''
+        self.store_as_list(p)
+
     # component_reference :
     # [ "." ] IDENT [ array_subscripts ] { "." IDENT [ array_subscripts ] }
 
@@ -752,16 +763,6 @@ class ModelicaParser(Parser):
 
     # annotation :
     # annotation class_modification
-
-    def p_name(self, p):
-        '''name : IDENT'''
-        self.store_as_list(p)
-
-    # TODO
-    def p_names(self, p):
-        '''names : names '.' IDENT
-            | empty'''
-        self.store_as_list(p)
 
 
 if __name__ == '__main__':
